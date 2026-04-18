@@ -1,0 +1,189 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: rgb(241, 34, 120);
+}
+
+.góra {
+    background-color: rgb(241, 34, 120);
+    color: rgb(88, 18, 47);
+    text-align: center;
+    height: 20vh;
+    padding-bottom: 3rem;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-size: 3rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+}
+
+#LOGO {
+    width: 18rem;
+    height: 18rem;
+    margin-right: 2rem;
+}
+
+#Koleo {
+    width: 13rem;
+    height: 5rem;
+}
+
+.środek {
+    background-color: rgb(233, 108, 160);
+    color: rgb(88, 18, 47);
+    text-align: center;
+    height: 60vh;
+    padding: 1rem;
+    border: 1rem solid rgb(233, 108, 160);
+    border-radius: 5rem;
+    font-family: Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    font-size: xx-large;
+}
+
+#zamiana {
+    display: none;
+    width: 4rem;
+}
+
+#zamiana:hover {
+    width: 4.1rem;
+    cursor: pointer;
+}
+
+.dół {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    border: 1rem solid rgb(129, 39, 81);
+    border-top-left-radius: 5rem;
+    border-top-right-radius: 5rem;
+    background-color: rgb(129, 39, 81);
+    text-align: center;
+    color: white;
+    font-size: medium;
+    font-family: 'Courier New', Courier, monospace;
+    padding: 3rem;
+}
+
+#wyszukiwarka {
+    display: none;
+}
+
+#wyszukiwarka2 {
+    display: none;
+}
+
+#opcje {
+    border: 1px solid purple;
+    height: 4rem;
+    font-size: large;
+    width: 20rem;
+    border-radius: 10px;
+    text-align: center;
+}   
+
+#opcje option {
+    border: 1px solid purple;
+    border-radius: 10px;
+}
+
+.godziny {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    border-radius: 10px;
+    background-color: white;
+    color: black;
+}
+
+.godziny p {
+    background-color: rgb(39, 129, 129);
+    border-radius: 10px;
+    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+    font-size: 1.5rem;
+}
+
+#results {
+    display: flex;
+    flex-wrap: wrap; /* Ensures elements wrap properly */
+    justify-content: flex-start; /* Adjust alignment */
+    gap: 10px; /* Adds space between items */
+    overflow-y: auto; /* Enable vertical scrolling */
+    max-height: 80vh; /* Limit the height of the container to prevent overflow */
+}
+
+#results p {
+    border: 1px solid white;
+    border-radius: 50px;
+    background-color: white;
+    color: black;
+    width: 10rem;
+    height: 4rem;
+    padding: 1rem;
+}
+
+.textbox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    justify-content: space-around;
+}
+
+textarea {
+    border: 1px solid black;
+    border-radius: 20px;
+    width: 25rem;
+    font-size: 2rem;
+    text-transform: 2rem;
+    height: 5rem;
+    padding: 1rem;
+}
+
+button {
+    width: 20rem;
+    height: 5rem;
+    border: 1px solid rgb(230, 87, 199);
+    border-radius: 20px;
+    background-color: rgb(230, 87, 199);
+    color: white;
+    font-size: x-large;
+}
+
+button:hover {
+    background-color: rgb(236, 111, 209);
+    cursor: pointer;
+}
+
+@media only screen and (max-width: 600px) {
+    .góra {
+        font-size: xx-large;
+        padding-bottom: 0;
+    }
+
+    .środek {
+        height: 100vh;
+    }
+
+    #LOGO {
+        display: none;
+    }
+
+    textarea {
+        width: 12rem;
+        font-size: x-large;
+    }
+}
+.fade-in {
+    opacity: 0;
+    animation: fadeIn 1s forwards;
+  }
+  
+@keyframes fadeIn {
+    to {
+      opacity: 1;
+    }
+}  

@@ -1,0 +1,413 @@
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Wyszukiwarka pociągów - ŁKA</title>
+        <link rel="icon" type="image/svg" sizes="32x32" href="logo.svg">
+        <link rel="icon" type="image/svg" sizes="16x16" href="logo.svg">
+        <link rel="stylesheet" href="styl.css">
+    </head>
+    <body>
+        <div class="góra">
+            <span>Wyszukiwarka pociągów - ŁKA</span>
+            <div class="nothing"></div>
+        </div>
+        <div class="środek">
+            <div class="textbox">
+                <div class="opcje">
+                    <select name="wybór" id="opcje">
+                        <option value="0">Podaj opcję</option>
+                        <option value="1">Podaj wszystkie stacje</option>
+                        <option value="2">Podaj daną stację</option>
+                        <option value="3">Sprawdź połączenie bez przesiadek</option>
+                        <option value="4">Podaj godziny odjazdu i przyjazdu pociągu</option>
+                    </select>
+                </div>
+                <div class="textbox">
+                    <textarea id="wyszukiwarka" rows="4" cols="50" placeholder="Podaj stację:"></textarea>
+                    <textarea id="wyszukiwarka2" rows="4" cols="50" placeholder="Podaj stację przyjazdu:"></textarea>
+                    <img id="zamiana" src="https://th.bing.com/th/id/R.bac6a85ddbcfe1504de90eff246a7d79?rik=ehjSuwCpwFnHsQ&pid=ImgRaw&r=0&sres=1&sresct=1" onclick="zamiana()" alt="Zamiana">
+                    <button onclick="ŁkaInfo()">Znajdź</button>
+                </div>
+            </div>
+        </div>
+        <div class="dół">
+            <div id="tekst"></div>
+            <div id="results"></div>
+            <div id="hiddenResults"></div>
+        </div>
+        <script>
+            console.log("This website is solely created for educational purposes and it might not contain any commercially relevant or factual information!")
+            let data = null;
+
+            fetch('2024-2025.xml')
+                .then(response => response.text())
+                .then(xmlString => {
+                    const parser = new DOMParser();
+                    data = parser.parseFromString(xmlString, 'application/xml');
+                })
+                .catch(error => console.error("Błąd ładowania pliku XML:", error));
+            
+            const stacja = document.getElementById('wyszukiwarka');
+            const stacja2 = document.getElementById('wyszukiwarka2');
+            const ikonka = document.getElementById('zamiana');
+            const opcje = document.getElementById('opcje');
+            opcje.addEventListener('change', pokazywanie);
+            
+            function pokazywanie() {
+                let opcja = opcje.value;
+                document.getElementById('tekst').innerHTML = '';
+                
+                const resultsContainer = document.getElementById('results');
+                const textContainer = document.getElementById('tekst');
+                textContainer.classList.remove('fade-in');
+                resultsContainer.classList.remove('fade-in');
+                resultsContainer.innerHTML = '';
+
+                foundStations.clear();
+
+                if (opcja == 1 || opcja == 0) {
+                    stacja.style.display = 'none';
+                    stacja2.style.display = 'none';
+                    ikonka.style.display = 'none';
+                } else if (opcja == 2) {
+                    stacja.style.display = 'block';
+                    stacja.placeholder = 'Podaj stację:';
+                    stacja2.style.display = 'none';
+                    ikonka.style.display = 'none';
+                } else {
+                    stacja.style.display = 'block';
+                    stacja.placeholder = 'Podaj stację odjazdu:';
+                    stacja2.style.display = 'block';
+                    ikonka.style.display = 'block';
+                }
+            }
+
+            function transliteracja(słowo) {
+                const polskie = ['ą', 'ć', 'ę', 'ł', 'ń', 'ó', 'ś', 'ź', 'ż'];
+                const english = ['a', 'c', 'e', 'l', 'n', 'o', 's', 'z', 'z'];
+
+                let word = [];
+
+                for (let a = 0; a < słowo.length; a++) {
+                    for (let b = 0; b < polskie.length; b++) {
+                        if (słowo[a] == polskie[b]) {
+                            word.push(english[b])
+                            a++;
+                        }
+                    }
+                    word.push(słowo[a]);
+                }
+                word = word.join('').toString();
+                return word;
+            }
+
+            let foundStations = new Set();
+
+            function ŁkaInfo() {
+                pokazywanie();
+
+                const odjazd = transliteracja(document.getElementById('wyszukiwarka').value.trim().toLowerCase());
+                transliteracja(odjazd);
+                const przyjazd = transliteracja(document.getElementById('wyszukiwarka2').value.trim().toLowerCase());
+                const opcja = document.getElementById('opcje').value;
+                const resultsContainer = document.getElementById('results');
+                const textContainer = document.getElementById('tekst');
+
+                textContainer.classList.remove('fade-in');
+                resultsContainer.classList.remove('fade-in');
+                textContainer.innerHTML = '';
+                resultsContainer.innerHTML = '';
+
+                resultsContainer.style.display = 'none';
+
+                foundStations.clear();
+
+                if (!data) {
+                    alert("Sprawdź, czy wszystko podałeś. 😁👍");
+                    return;
+                } else if (opcja == 0) {
+                    textContainer.innerHTML = '<h1>Nie podałeś żadnej opcji. 👀</h1>';
+                    resultsContainer.innerHTML = '';
+
+                    return;
+                } else if (opcja == 1 && !odjazd) {
+
+                } else if (!odjazd) {
+                    alert("Podaj stację!!!");
+                    return;
+                }
+
+                const namespace = 'http://model.km.sitkol.tktelekom.pl';
+                const trains = data.getElementsByTagNameNS(namespace, 'train');
+
+                let resultItems = [];
+
+                if (opcja == 4) {
+                    return showTimes(odjazd, przyjazd, resultsContainer);
+                }
+
+                if (opcja == 3) {
+                    let nazwaStacjiWyjazdu;
+                    let nazwaStacjiPrzyjazdu;
+
+                    for (let train of trains) {
+                        let foundDeparture = false;
+                        let foundArrival = false;
+
+                        const route = train.getElementsByTagNameNS(namespace, 'route')[0];
+                        const stations = route.getElementsByTagNameNS(namespace, 'station');
+
+                        for (let station of stations) {
+                            const name = station.getAttribute('name');
+                            const serviceType = station.getAttribute('serviceType');
+
+                            if (name && serviceType === 'LKA') {
+                                if (transliteracja(name.toLowerCase()) == odjazd) {
+                                    nazwaStacjiWyjazdu = name
+                                    foundDeparture = true;
+                                }
+                                if (transliteracja(name.toLowerCase()) == przyjazd) {
+                                    nazwaStacjiPrzyjazdu = name
+                                    foundArrival = true;
+                                }
+                                if (foundDeparture && foundArrival) {
+                                    resultItems.push(`<h1>Jest połączenie ze stacji ${nazwaStacjiWyjazdu} do ${nazwaStacjiPrzyjazdu} bez przesiadek 😊</h1>`);
+                                    break; 
+                                }
+                            }
+                            
+                        }
+                        if (resultItems.length > 0) break;
+                    }
+
+                    if (resultItems.length === 0) {
+                        resultItems.push('<h1>Nie znaleziono połączenia pomiędzy stacjami bez przesiadek 😒</h1>');
+                    }
+
+                } else {
+                    foundStations.clear();
+
+                    let stationsFound = false;
+
+                    for (let train of trains) {
+                        const route = train.getElementsByTagNameNS(namespace, 'route')[0];
+                        const stations = route.getElementsByTagNameNS(namespace, 'station');
+
+                        for (let station of stations) {
+                            const name = station.getAttribute('name');
+                            const serviceType = station.getAttribute('serviceType');
+
+                            if (name && serviceType === 'LKA' && opcja == 1) {
+                                if (!foundStations.has(name)) {
+                                    foundStations.add(name);
+                                    resultItems.push(`<p>Stacja: ${name}</p>`);
+                                    stationsFound = true;
+                                }
+                            }
+
+                            if (name && serviceType === 'LKA' && opcja == 2 && transliteracja(name.toLowerCase()).includes(odjazd)) {
+                                if (!foundStations.has(name)) {
+                                    foundStations.add(name);
+                                    resultItems.push(`<p>Stacja: ${name}</p>`);
+                                    stationsFound = true;
+                                }
+                            }
+                        }
+                    }
+
+                    if (!stationsFound) {
+                        textContainer.innerHTML = '<h1>Nie udało się znaleźć stacji 😢</h1>';
+                    }
+                    else {
+                        textContainer.innerHTML = '<h1>Oto wyniki 😉:</h1>';
+                    }
+                }
+
+                resultsContainer.innerHTML = resultItems.join('');
+                resultsContainer.style.display = 'flex';
+                
+                textContainer.classList.add('fade-in');
+                resultsContainer.classList.add('fade-in');
+            }
+
+            function showTimes(odjazd, przyjazd, resultsContainer) {
+                pokazywanie();
+                const textContainer = document.getElementById('tekst');
+                if (!odjazd || !przyjazd || !data) {
+                    alert("Proszę podać nazwę stacji odjazdu i przyjazdu!");
+                    return;
+                }
+
+                const namespace = 'http://model.km.sitkol.tktelekom.pl';
+                const trains = data.getElementsByTagNameNS(namespace, 'train');
+                let directConnections = new Set();
+                let transferConnections = [];
+                let nazwaStacjiWyjazdu;
+                let nazwaStacjiPrzyjazdu;
+                
+                for (let train of trains) {
+                    const route = train.getElementsByTagNameNS(namespace, 'route')[0];
+                    const stations = route.getElementsByTagNameNS(namespace, 'station');
+
+                    let departureTime = null;
+                    let arrivalTime = null;
+                    let departureIndex = -1;
+                    let arrivalIndex = -1;
+
+                    for (let i = 0; i < stations.length; i++) {
+                        const station = stations[i];
+                        const name = station.getAttribute('name');
+                        const serviceType = station.getAttribute('serviceType');
+
+                        if (name && serviceType === 'LKA') {
+                            if (transliteracja(name.toLowerCase()) == odjazd && departureIndex === -1) {
+                                departureTime = station.getAttribute('dep');
+                                nazwaStacjiWyjazdu = name;
+                                departureIndex = i;
+                            }
+
+                            if (transliteracja(name.toLowerCase()) == przyjazd && arrivalIndex === -1) {
+                                arrivalTime = station.getAttribute('arr');
+                                nazwaStacjiPrzyjazdu = name;
+                                arrivalIndex = i;
+                            }
+
+                            if (departureIndex !== -1 && arrivalIndex !== -1 && departureIndex < arrivalIndex) {
+                                directConnections.add(`${departureTime} - ${arrivalTime}`);
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (directConnections.size > 0) {
+                    textContainer.style.display = 'flex';
+                    resultsContainer.style.display = 'flex';
+                    resultsContainer.style.alignItems = 'center';
+                    resultsContainer.style.justifyContent  = 'center';
+                    textContainer.innerHTML = `<h1>Jest połączenie bez przesiadek ze stacji ${nazwaStacjiWyjazdu} do ${nazwaStacjiPrzyjazdu} 😊</h1>`;
+                    const sortedConnections = Array.from(directConnections).sort();
+
+                    sortedConnections.forEach(connection => {
+                        const para = document.createElement('p');
+                        para.textContent = connection;
+                        para.style.color = 'black';
+                        para.style.backgroundColor = 'white';
+                        resultsContainer.appendChild(para);
+                    });
+
+                    textContainer.classList.add('fade-in');
+                    resultsContainer.classList.add('fade-in');
+
+                    return;
+                }
+
+                findConnectionsInWorker(trains, odjazd, przyjazd, namespace);
+            }
+
+            function findConnectionsInWorker(trains, odjazd, przyjazd, namespace) {
+                const worker = new Worker('worker.js');
+                
+                const trainData = [];
+                
+                for (let train of trains) {
+                    const route = train.getElementsByTagNameNS(namespace, 'route')[0];
+                    const stations = route.getElementsByTagNameNS(namespace, 'station');
+                    let stationList = [];
+                    
+                    for (let station of stations) {
+                        stationList.push({
+                            name: station.getAttribute('name'),
+                            dep: station.getAttribute('dep'),
+                            arr: station.getAttribute('arr'),
+                            serviceType: station.getAttribute('serviceType')
+                        });
+                    }
+                    
+                    trainData.push({
+                        route: {
+                            stations: stationList
+                        }
+                    });
+                }
+                
+                console.log("Sending to worker:", { trainData, odjazd, przyjazd });
+                
+                worker.postMessage({ trainData, odjazd, przyjazd });
+
+                worker.onmessage = function (event) {
+                    const { transferConnections } = event.data;
+                    console.log("Received transfer connections:", transferConnections);
+                    
+                    const resultsContainer = document.getElementById('results');
+                    const textContainer = document.getElementById('tekst');
+
+                    textContainer.innerHTML = '';
+                    resultsContainer.innerHTML = '';
+
+                    textContainer.classList.add('fade-in');
+                    resultsContainer.classList.add('fade-in');
+                    resultsContainer.style.display = 'flex';
+                    resultsContainer.style.flexWrap = 'wrap';
+                    resultsContainer.style.alignItems = 'center';
+                    resultsContainer.style.justifyContent  = 'center';
+                    resultsContainer.style.gap = '2rem';
+
+                    if (transferConnections.length > 0) {
+                        textContainer.innerHTML = `<h1>Znaleziono połączenia z przesiadkami 😊</h1>`;
+
+                        transferConnections.forEach(connection => {
+                            const para = document.createElement('p');
+                            para.style.width = '20rem';
+                            para.style.height = '7rem';
+                            para.style.color = 'black';
+                            para.style.backgroundColor = 'white';
+                            para.style.border = '1px solid white';
+                            para.style.padding = '3rem';
+                            para.style.borderRadius = '5rem';
+                            para.innerHTML = `Przesiadka na stacji <strong>${connection.transferStation}</strong>:<br>` +
+                                `1. ${connection.firstLeg}<br>` +
+                                `2. ${connection.secondLeg}`;
+                            resultsContainer.appendChild(para);
+                        });
+                    } else {
+                        textContainer.innerHTML = `<h1>Nie znaleziono połączeń z przesiadkami 😒</h1>`;
+                    }
+                };
+            }
+
+            function extractTrainData(trains, namespace) {
+                const trainData = [];
+
+                for (let train of trains) {
+                    const route = train.getElementsByTagNameNS(namespace, 'route')[0];
+                    const stations = route.getElementsByTagNameNS(namespace, 'station');
+                    const stationData = [];
+
+                    for (let station of stations) {
+                        const name = station.getAttribute('name');
+                        const serviceType = station.getAttribute('serviceType');
+                        const dep = station.getAttribute('dep');
+                        const arr = station.getAttribute('arr');
+
+                        stationData.push({ name, serviceType, dep, arr });
+                    }
+
+                    trainData.push({ route: stationData });
+                }
+
+                return trainData;
+            }
+
+            function zamiana() {
+                const wartośćOdjazd = stacja.value;
+                const wartośćPrzyjazd = stacja2.value;
+
+                stacja2.value = wartośćOdjazd;
+                stacja.value = wartośćPrzyjazd;
+            }
+        </script>
+    </body>
+    </html>
